@@ -1,2 +1,0 @@
-# kghackers.github.io
-KlavoStat
