@@ -144,8 +144,6 @@ class PlayerByRankFilter {
         // todo: extract "bind on Enter" to some common JS, use in both Filter and Search
         const inputSearch = function(event) {
             if (event.key === 'Enter') {
-                // console.log('Enter pressed in input field!');
-
                 // Cancel the default action, if needed
                 event.preventDefault();
 
@@ -188,7 +186,6 @@ class PlayerByRankFilter {
             return;
         }
 
-        // console.log(`Performing search with ${minValueInt} <= totalRacesCount <= ${maxValueInt}`);
         this.updateChartData(this.config.data, minValueInt, maxValueInt);
     }
 
@@ -199,13 +196,9 @@ class PlayerByRankFilter {
 
     updateChartData(players, minTotalRacesCount, maxTotalRacesCount) {
         const playersWithGivenTotalRacesCount = this.filter(this.config.data, minTotalRacesCount, maxTotalRacesCount);
-        // console.log(`Players filtered by minRacesCount = ${minTotalRacesCount}, maxRacesCount = ${maxTotalRacesCount}:`);
-        // console.log(playersWithGivenTotalRacesCount);
 
         const countsByRank = PlayerByRankFilter.groupByRank(playersWithGivenTotalRacesCount);
         const chartData = PlayerByRankFilter.convertToChartData(countsByRank);
-        // console.log('converted to chart data format:')
-        // console.log(chartData);
 
         this.config.chart.update({
             data: chartData,
@@ -229,6 +222,8 @@ class PlayerByRankFilter {
         if (minTotalRacesCount && maxTotalRacesCount) {
             return `Действующие игроки по рангам (общий пробег ${minTotalRacesCount}–${maxTotalRacesCount})`;
         }
+
+        throw new Error(`Incorrect minTotalRacesCount = ${minTotalRacesCount} and maxTotalRacesCount = ${maxTotalRacesCount} combination.`);
     }
 
     filter(players, minTotalRacesCount, maxTotalRacesCount) {
@@ -237,7 +232,7 @@ class PlayerByRankFilter {
             return;
         }
 
-        let filterFunction = this.getFilterFunction(minTotalRacesCount, maxTotalRacesCount);
+        const filterFunction = this.getFilterFunction(minTotalRacesCount, maxTotalRacesCount);
 
         return players.filter(player => {
             const totalRacesCount = player[PlayerByRankFilter.TOTAL_RACES_COUNT_INDEX];
@@ -263,28 +258,23 @@ class PlayerByRankFilter {
             return totalRacesCount => (minTotalRacesCount <= totalRacesCount) && (totalRacesCount <= maxTotalRacesCount);
         }
 
-        throw `Incorrect filter combination: minTotalRacesCount = ${minTotalRacesCount}, maxTotalRacesCount = ${maxTotalRacesCount}`;
+        throw new Error(`Incorrect filter combination: minTotalRacesCount = ${minTotalRacesCount}, maxTotalRacesCount = ${maxTotalRacesCount}`);
     }
 
     static groupByRank(players) {
-        const countByRank = players.reduce(function(result, player) {
+        return players.reduce(function (result, player) {
             const rank = player[PlayerByRankFilter.RANK_INDEX];
 
             const currentCount = result[rank] || 0;
             result[rank] = currentCount + 1;
             return result;
         }, {});
-
-        // console.log('countByRank:');
-        // console.log(countByRank);
-
-        return countByRank;
     }
 
     static convertToChartData(countsByRank) {
         const chartData = [];
 
-        for (let [rankLevel, playersCount] of Object.entries(countsByRank)) {
+        for (const [rankLevel, playersCount] of Object.entries(countsByRank)) {
             chartData.push({
                 rankLevel: parseInt(rankLevel),
                 rankName: PlayersByRankChart.RANK_NAMES[rankLevel],
@@ -361,8 +351,6 @@ class PlayersByRankChart {
     }
 
     update(config) {
-        // console.log('update started. Config:' + JSON.stringify(config));
-
         this.config = config;
         this.fillChartConfigs();
 
@@ -379,8 +367,6 @@ class PlayersByRankChart {
         this.doughnutChart.update();
 
         this.appendTable(this.tableContainerId);
-
-        // console.log('update executed. I am: ' + this.config.label);
     }
 
     fillChartConfigs() {
@@ -427,7 +413,9 @@ class PlayersByRankChart {
     getChartData(config) {
         const playersByRankChartLabels = config.data.map(playersByRankCount => playersByRankCount.rankDisplayName); // horizontal axes
         const playersByRankPlayersCount = config.data.map(playersByRankCount => playersByRankCount.playersCount); // data
-        const playersByRankBackgroundColors = config.data.map(playersByRankCount => PlayersByRankChart.RANK_COLORS[playersByRankCount.rankName]); // background colors according to ranks
+        const playersByRankBackgroundColors = config.data.map(playersByRankCount =>
+            PlayersByRankChart.RANK_COLORS[playersByRankCount.rankName]
+        ); // background colors according to ranks
 
         return {
             label: config.label,
